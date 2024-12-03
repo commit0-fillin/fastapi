@@ -61,6 +61,30 @@ def Depends(dependency: Annotated[Optional[Callable[..., Any]], Doc('\n         
     """
     pass
 
+def read_items():
+    """
+    Read and return a list of items.
+    
+    This is a placeholder implementation. In a real application, you might
+    fetch items from a database or another data source.
+    """
+    return [{"item_id": 1, "name": "Example Item"}]
+
+def read_own_items():
+    """
+    Read and return a list of items owned by the current user.
+    
+    This is a placeholder implementation. In a real application, you would
+    typically use authentication to identify the current user and then
+    fetch their items from a database.
+    """
+    # Simulating a current user with ID 1
+    current_user_id = 1
+    return [
+        {"item_id": 1, "name": "User's First Item", "owner_id": current_user_id},
+        {"item_id": 2, "name": "User's Second Item", "owner_id": current_user_id},
+    ]
+
 def Security(dependency: Annotated[Optional[Callable[..., Any]], Doc('\n            A "dependable" callable (like a function).\n\n            Don\'t call it directly, FastAPI will call it for you, just pass the object\n            directly.\n            ')]=None, *, scopes: Annotated[Optional[Sequence[str]], Doc('\n            OAuth2 scopes required for the *path operation* that uses this Security\n            dependency.\n\n            The term "scope" comes from the OAuth2 specification, it seems to be\n            intentionaly vague and interpretable. It normally refers to permissions,\n            in cases to roles.\n\n            These scopes are integrated with OpenAPI (and the API docs at `/docs`).\n            So they are visible in the OpenAPI specification.\n            )\n            ')]=None, use_cache: Annotated[bool, Doc('\n            By default, after a dependency is called the first time in a request, if\n            the dependency is declared again for the rest of the request (for example\n            if the dependency is needed by several dependencies), the value will be\n            re-used for the rest of the request.\n\n            Set `use_cache` to `False` to disable this behavior and ensure the\n            dependency is called again (if declared more than once) in the same request.\n            ')]=True) -> Any:
     """
     Declare a FastAPI Security dependency.
