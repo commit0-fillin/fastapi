@@ -17,7 +17,30 @@ def create_response_field(name: str, type_: Type[Any], class_validators: Optiona
     """
     Create a new response field. Raises if type_ is invalid.
     """
-    pass
+    if PYDANTIC_V2:
+        field_info = field_info or FieldInfo()
+        if default is not Undefined:
+            field_info.default = default
+        if required is not Undefined:
+            field_info.is_required = required
+        if alias is not None:
+            field_info.alias = alias
+        return ModelField(
+            name=name,
+            field_info=field_info,
+            mode=mode,
+        )
+    else:
+        return ModelField(
+            name=name,
+            type_=type_,
+            class_validators=class_validators,
+            default=default,
+            required=required,
+            model_config=model_config,
+            field_info=field_info,
+            alias=alias,
+        )
 
 def get_value_or_default(first_item: Union[DefaultPlaceholder, DefaultType], *extra_items: Union[DefaultPlaceholder, DefaultType]) -> Union[DefaultPlaceholder, DefaultType]:
     """
@@ -27,4 +50,7 @@ def get_value_or_default(first_item: Union[DefaultPlaceholder, DefaultType], *ex
 
     Otherwise, the first item (a `DefaultPlaceholder`) will be returned.
     """
-    pass
+    for item in (first_item, *extra_items):
+        if not isinstance(item, DefaultPlaceholder):
+            return item
+    return first_item
