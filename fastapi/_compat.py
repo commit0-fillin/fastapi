@@ -52,7 +52,7 @@ if PYDANTIC_V2:
             self._type_adapter: TypeAdapter[Any] = TypeAdapter(Annotated[self.field_info.annotation, self.field_info])
 
         def __hash__(self) -> int:
-            return id(self)
+            return hash((self.name, self.mode, id(self.field_info)))
 else:
     from fastapi.openapi.constants import REF_PREFIX as REF_PREFIX
     from pydantic import AnyUrl as Url
