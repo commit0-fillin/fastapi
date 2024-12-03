@@ -32,7 +32,10 @@ def decimal_encoder(dec_value: Decimal) -> Union[int, float]:
     >>> decimal_encoder(Decimal("1"))
     1
     """
-    pass
+    if dec_value.as_tuple().exponent == 0:
+        return int(dec_value)
+    else:
+        return float(dec_value)
 ENCODERS_BY_TYPE: Dict[Type[Any], Callable[[Any], Any]] = {bytes: lambda o: o.decode(), Color: str, datetime.date: isoformat, datetime.datetime: isoformat, datetime.time: isoformat, datetime.timedelta: lambda td: td.total_seconds(), Decimal: decimal_encoder, Enum: lambda o: o.value, frozenset: list, deque: list, GeneratorType: list, IPv4Address: str, IPv4Interface: str, IPv4Network: str, IPv6Address: str, IPv6Interface: str, IPv6Network: str, NameEmail: str, Path: str, Pattern: lambda o: o.pattern, SecretBytes: str, SecretStr: str, set: list, UUID: str, Url: str, AnyUrl: str}
 encoders_by_class_tuples = generate_encoders_by_class_tuples(ENCODERS_BY_TYPE)
 
@@ -49,4 +52,120 @@ def jsonable_encoder(obj: Annotated[Any, Doc('\n            The input object to 
     Read more about it in the
     [FastAPI docs for JSON Compatible Encoder](https://fastapi.tiangolo.com/tutorial/encoder/).
     """
-    pass
+    if custom_encoder is None:
+        custom_encoder = {}
+    
+    if is_dataclass(obj):
+        obj_dict = dataclasses.asdict(obj)
+        return jsonable_encoder(
+            obj_dict,
+            include=include,
+            exclude=exclude,
+            by_alias=by_alias,
+            exclude_unset=exclude_unset,
+            exclude_defaults=exclude_defaults,
+            exclude_none=exclude_none,
+            custom_encoder=custom_encoder,
+            sqlalchemy_safe=sqlalchemy_safe,
+        )
+    
+    if isinstance(obj, BaseModel):
+        encoder = getattr(obj.__config__, "json_encoders", {})
+        if custom_encoder:
+            encoder.update(custom_encoder)
+        obj_dict = _model_dump(
+            obj,
+            include=include,
+            exclude=exclude,
+            by_alias=by_alias,
+            exclude_unset=exclude_unset,
+            exclude_defaults=exclude_defaults,
+            exclude_none=exclude_none,
+        )
+        return jsonable_encoder(
+            obj_dict,
+            include=include,
+            exclude=exclude,
+            by_alias=by_alias,
+            exclude_unset=exclude_unset,
+            exclude_defaults=exclude_defaults,
+            exclude_none=exclude_none,
+            custom_encoder=encoder,
+            sqlalchemy_safe=sqlalchemy_safe,
+        )
+    
+    if isinstance(obj, Enum):
+        return obj.value
+    
+    if isinstance(obj, PurePath):
+        return str(obj)
+    
+    if isinstance(obj, (str, int, float, type(None))):
+        return obj
+    
+    if isinstance(obj, dict):
+        encoded_dict = {}
+        for key, value in obj.items():
+            if isinstance(key, bytes):
+                encoded_key = key.decode("utf-8")
+            else:
+                encoded_key = jsonable_encoder(
+                    key,
+                    by_alias=by_alias,
+                    exclude_unset=exclude_unset,
+                    exclude_none=exclude_none,
+                    custom_encoder=custom_encoder,
+                    sqlalchemy_safe=sqlalchemy_safe,
+                )
+            encoded_value = jsonable_encoder(
+                value,
+                by_alias=by_alias,
+                exclude_unset=exclude_unset,
+                exclude_none=exclude_none,
+                custom_encoder=custom_encoder,
+                sqlalchemy_safe=sqlalchemy_safe,
+            )
+            encoded_dict[encoded_key] = encoded_value
+        return encoded_dict
+    
+    if isinstance(obj, (list, set, frozenset, GeneratorType, tuple)):
+        return [
+            jsonable_encoder(
+                item,
+                include=include,
+                exclude=exclude,
+                by_alias=by_alias,
+                exclude_unset=exclude_unset,
+                exclude_defaults=exclude_defaults,
+                exclude_none=exclude_none,
+                custom_encoder=custom_encoder,
+                sqlalchemy_safe=sqlalchemy_safe,
+            )
+            for item in obj
+        ]
+    
+    if type(obj) in ENCODERS_BY_TYPE:
+        return ENCODERS_BY_TYPE[type(obj)](obj)
+    
+    for encoder, classes in encoders_by_class_tuples:
+        if isinstance(obj, classes):
+            return encoder(obj)
+    
+    try:
+        data = dict(obj)
+    except Exception:
+        pass
+    else:
+        return jsonable_encoder(
+            data,
+            include=include,
+            exclude=exclude,
+            by_alias=by_alias,
+            exclude_unset=exclude_unset,
+            exclude_defaults=exclude_defaults,
+            exclude_none=exclude_none,
+            custom_encoder=custom_encoder,
+            sqlalchemy_safe=sqlalchemy_safe,
+        )
+    
+    raise ValueError(f"Object of type {type(obj)} is not JSON serializable")
