@@ -39,4 +39,4 @@ class BackgroundTasks(StarletteBackgroundTasks):
         Read more about it in the
         [FastAPI docs for Background Tasks](https://fastapi.tiangolo.com/tutorial/background-tasks/).
         """
-        pass
+        super().add_task(func, *args, **kwargs)
