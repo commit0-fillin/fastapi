@@ -23,7 +23,22 @@ except ImportError:
 
         @classmethod
         def __get_pydantic_core_schema__(cls, source: Type[Any], handler: Callable[[Any], CoreSchema]) -> CoreSchema:
-            return with_info_plain_validator_function(cls._validate)
+            return with_info_plain_validator_function(
+                cls._validate,
+                serialization=handler(str),
+                core_schema=handler(str)
+            )
+
+        @classmethod
+        def _validate(cls, __input_value: Any, _: Any) -> str:
+            if not isinstance(__input_value, str):
+                raise ValueError("Input value must be a string")
+        
+            # Simple email validation (you might want to use a more robust method)
+            if '@' not in __input_value or '.' not in __input_value:
+                raise ValueError("Invalid email format")
+        
+            return __input_value
 
 class BaseModelWithConfig(BaseModel):
     if PYDANTIC_V2:
