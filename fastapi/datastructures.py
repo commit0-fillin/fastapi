@@ -56,7 +56,7 @@ class UploadFile(StarletteUploadFile):
 
         To be awaitable, compatible with async, this is run in threadpool.
         """
-        pass
+        await self.file.write(data)
 
     async def read(self, size: Annotated[int, Doc('\n                The number of bytes to read from the file.\n                ')]=-1) -> bytes:
         """
@@ -64,7 +64,7 @@ class UploadFile(StarletteUploadFile):
 
         To be awaitable, compatible with async, this is run in threadpool.
         """
-        pass
+        return await self.file.read(size)
 
     async def seek(self, offset: Annotated[int, Doc('\n                The position in bytes to seek to in the file.\n                ')]) -> None:
         """
@@ -74,7 +74,7 @@ class UploadFile(StarletteUploadFile):
 
         To be awaitable, compatible with async, this is run in threadpool.
         """
-        pass
+        await self.file.seek(offset)
 
     async def close(self) -> None:
         """
@@ -82,7 +82,7 @@ class UploadFile(StarletteUploadFile):
 
         To be awaitable, compatible with async, this is run in threadpool.
         """
-        pass
+        await self.file.close()
 
     @classmethod
     def __get_validators__(cls: Type['UploadFile']) -> Iterable[Callable[..., Any]]:
@@ -126,4 +126,4 @@ def Default(value: DefaultType) -> DefaultType:
     It's used internally to recognize when a default value has been overwritten, even
     if the overridden default value was truthy.
     """
-    pass
+    return DefaultPlaceholder(value)
