@@ -127,6 +127,8 @@ class OAuth2PasswordRequestFormStrict(OAuth2PasswordRequestForm):
     """
 
     def __init__(self, grant_type: Annotated[str, Form(pattern='password'), Doc('\n                The OAuth2 spec says it is required and MUST be the fixed string\n                "password". This dependency is strict about it. If you want to be\n                permissive, use instead the `OAuth2PasswordRequestForm` dependency\n                class.\n                ')], username: Annotated[str, Form(), Doc('\n                `username` string. The OAuth2 spec requires the exact field name\n                `username`.\n                ')], password: Annotated[str, Form(), Doc('\n                `password` string. The OAuth2 spec requires the exact field name\n                `password".\n                ')], scope: Annotated[str, Form(), Doc('\n                A single string with actually several scopes separated by spaces. Each\n                scope is also a string.\n\n                For example, a single string with:\n\n                ```python\n                "items:read items:write users:read profile openid"\n                ````\n\n                would represent the scopes:\n\n                * `items:read`\n                * `items:write`\n                * `users:read`\n                * `profile`\n                * `openid`\n                ')]='', client_id: Annotated[Union[str, None], Form(), Doc("\n                If there's a `client_id`, it can be sent as part of the form fields.\n                But the OAuth2 specification recommends sending the `client_id` and\n                `client_secret` (if any) using HTTP Basic auth.\n                ")]=None, client_secret: Annotated[Union[str, None], Form(), Doc("\n                If there's a `client_password` (and a `client_id`), they can be sent\n                as part of the form fields. But the OAuth2 specification recommends\n                sending the `client_id` and `client_secret` (if any) using HTTP Basic\n                auth.\n                ")]=None):
+        if grant_type != "password":
+            raise ValueError("OAuth2 password flow requires grant_type to be 'password'")
         super().__init__(grant_type=grant_type, username=username, password=password, scope=scope, client_id=client_id, client_secret=client_secret)
 
 class OAuth2(SecurityBase):
@@ -148,13 +150,18 @@ class OAuth2(SecurityBase):
         self.auto_error = auto_error
 
     async def __call__(self, request: Request) -> Optional[str]:
-        authorization = request.headers.get('Authorization')
-        if not authorization:
+        authorization: str = request.headers.get("Authorization")
+        scheme, param = get_authorization_scheme_param(authorization)
+        if not authorization or scheme.lower() != "bearer":
             if self.auto_error:
-                raise HTTPException(status_code=HTTP_403_FORBIDDEN, detail='Not authenticated')
+                raise HTTPException(
+                    status_code=HTTP_401_UNAUTHORIZED,
+                    detail="Not authenticated",
+                    headers={"WWW-Authenticate": "Bearer"},
+                )
             else:
                 return None
-        return authorization
+        return param
 
 class OAuth2PasswordBearer(OAuth2):
     """
