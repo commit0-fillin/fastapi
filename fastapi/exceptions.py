@@ -33,7 +33,8 @@ class HTTPException(StarletteHTTPException):
     """
 
     def __init__(self, status_code: Annotated[int, Doc('\n                HTTP status code to send to the client.\n                ')], detail: Annotated[Any, Doc('\n                Any data to be sent to the client in the `detail` key of the JSON\n                response.\n                ')]=None, headers: Annotated[Optional[Dict[str, str]], Doc('\n                Any headers to send to the client in the response.\n                ')]=None) -> None:
-        super().__init__(status_code=status_code, detail=detail, headers=headers)
+        super().__init__(status_code=status_code, detail=detail)
+        self.headers = headers
 
 class WebSocketException(StarletteWebSocketException):
     """
