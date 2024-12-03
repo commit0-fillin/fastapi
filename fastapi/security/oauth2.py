@@ -36,14 +36,16 @@ class OAuth2PasswordRequestForm:
 
     @app.post("/login")
     def login(form_data: Annotated[OAuth2PasswordRequestForm, Depends()]):
-        data = {}
-        data["scopes"] = []
-        for scope in form_data.scopes:
-            data["scopes"].append(scope)
+        data = {
+            "username": form_data.username,
+            "scopes": form_data.scopes
+        }
         if form_data.client_id:
             data["client_id"] = form_data.client_id
         if form_data.client_secret:
             data["client_secret"] = form_data.client_secret
+        # In a real application, you would verify the password here
+        # For this example, we'll just return the data
         return data
     ```
 
