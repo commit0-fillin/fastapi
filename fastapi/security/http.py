@@ -157,7 +157,9 @@ class HTTPBearer(HTTPBase):
     def read_current_user(
         credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)]
     ):
-        return {"scheme": credentials.scheme, "credentials": credentials.credentials}
+        if credentials:
+            return {"scheme": credentials.scheme, "credentials": credentials.credentials}
+        return {"scheme": None, "credentials": None}
     ```
     """
 
